@@ -55,7 +55,21 @@ if [[ $$DBS == "all" ]] ; then \
   DBS=$$(psql --tuples-only -P format=unaligned -U postgres \
     -c "SELECT datname FROM pg_database WHERE NOT datistemplate AND datname <> 'postgres'") ; \
 fi ; \
-echo "Backup DBs: $$DBS" ; \
+#Backup vars
+WEEK_NUMBER=`date +%U`; \
+DAY_TO_PROC=5; \
+DAY_OF_MONTH=`date +%d`; \
+DAY_OF_WEEK=`date +%u`; \
+MONTH_TO_KEEP=1; \
+WEEKS_TO_KEEP=2; \
+DAYS_TO_KEEP=3; \
+
+find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$MONTH_TO_KEEP*30 -name "*-monthly.tgz" -exec rm -rf '{}' ';'
+find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$WEEKS_TO_KEEP*7 -name "*-weekly.tgz" -exec rm -rf '{}' ';'
+find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$DAYS_TO_KEEP -name "*-daily.tgz" -exec rm -rf '{}' ';'
+
+#daily backup
+echo "Make daily backup DBs: $$DBS" ; \
 for d in $$DBS ; do \
   dest=$$DCAPE_DB_DUMP_DEST/$${d%%.*}-$${dt}.tgz ; \
   echo -n $${dest}... ; \
@@ -63,6 +77,30 @@ for d in $$DBS ; do \
   pg_dump -d $$d -U postgres -Ft | gzip > $$dest || echo "error" ; \
   echo Done ; \
 done
+#weekly backup
+if [ $(($WEEK_NUMBER % 2)) == 0 ]; then \
+	if [ $DAY_OF_WEEK = $DAY_TO_PROC ]; then \
+		echo "Make weekly backup DBs: $$DBS" ; \
+		for d in $$DBS ; do \
+			dest=$$DCAPE_DB_DUMP_DEST/$${d%%.*}-$${dt}-weekly.tgz ; \
+			echo -n $${dest}... ; \
+			[ -f $$dest ] && { echo Skip ; continue ; } ; \
+			pg_dump -d $$d -U postgres -Ft | gzip > $$dest || echo "error" ; \
+			echo Done ; \
+		done
+	fi
+fi
+#monthly backup
+if [ $DAY_OF_MONTH == 1 ]; then \
+	echo "Make monthly backup DBs: $$DBS" ; \
+	for d in $$DBS ; do \
+		dest=$$DCAPE_DB_DUMP_DEST/$${d%%.*}-$${dt}-monthly.tgz ; \
+		echo -n $${dest}... ; \
+		[ -f $$dest ] && { echo Skip ; continue ; } ; \
+		pg_dump -d $$d -U postgres -Ft | gzip > $$dest || echo "error" ; \
+		echo Done ; \
+	done
+fi
 endef
 export EXP_SCRIPT
 
