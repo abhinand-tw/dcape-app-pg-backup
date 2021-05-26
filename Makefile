@@ -55,7 +55,6 @@ if [[ $$DBS == "all" ]] ; then \
   DBS=$$(psql --tuples-only -P format=unaligned -U postgres \
     -c "SELECT datname FROM pg_database WHERE NOT datistemplate AND datname <> 'postgres'") ; \
 fi ; \
-#Backup vars
 WEEK_NUMBER=`date +%U`; \
 DAY_TO_PROC=5; \
 DAY_OF_MONTH=`date +%d`; \
@@ -63,7 +62,6 @@ DAY_OF_WEEK=`date +%u`; \
 MONTH_TO_KEEP=1; \
 WEEKS_TO_KEEP=2; \
 DAYS_TO_KEEP=3; \
-
 find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$MONTH_TO_KEEP*30 -name "*-monthly.tgz" -exec rm -rf '{}' ';' \
 find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$WEEKS_TO_KEEP*7 -name "*-weekly.tgz" -exec rm -rf '{}' ';' \
 find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$DAYS_TO_KEEP -name "*-daily.tgz" -exec rm -rf '{}' ';' \
