@@ -54,9 +54,9 @@ DAY_OF_WEEK=$$(date +%u); \
 MONTH_TO_KEEP=(1 * 30); \
 WEEKS_TO_KEEP=(2 * 7); \
 DAYS_TO_KEEP=3; \
-find $$DCAPE_DB_DUMP_DEST -type f -mtime +$$MONTH_TO_KEEP -name "*-monthly.tgz" | xargs --no-run-if-empty 'rm -f' '{}' ';' \
-find $$DCAPE_DB_DUMP_DEST -type f -mtime +$$WEEKS_TO_KEEP -name "*-weekly.tgz" | xargs --no-run-if-empty 'rm -f' '{}' ';' \
-find $$DCAPE_DB_DUMP_DEST -type f -mtime +$$DAYS_TO_KEEP -name "*-daily.tgz" | xargs --no-run-if-empty 'rm -f' '{}' ';' \
+find $$DCAPE_DB_DUMP_DEST -type f -mtime +$$MONTH_TO_KEEP -name "*-monthly.tgz" | xargs --no-run-if-empty 'rm -f' ';' \
+find $$DCAPE_DB_DUMP_DEST -type f -mtime +$$WEEKS_TO_KEEP -name "*-weekly.tgz" | xargs --no-run-if-empty 'rm -f' ';' \
+find $$DCAPE_DB_DUMP_DEST -type f -mtime +$$DAYS_TO_KEEP -name "*-daily.tgz" | xargs --no-run-if-empty 'rm -f' ';' \
 DBS=$$@ ; \
 [[ "$$DBS" ]] || DBS=all ; \
 dt=$$(date +%y%m%d) ; \
