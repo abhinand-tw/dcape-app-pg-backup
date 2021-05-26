@@ -47,6 +47,16 @@ export CONFIG_DEF
 
 define EXP_SCRIPT
 [[ "$$DCAPE_DB_DUMP_DEST" ]] || { echo "DCAPE_DB_DUMP_DEST not set. Exiting" ; exit 1 ; } ; \
+find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$$MONTH_TO_KEEP*30 -name "*-monthly.tgz" -exec rm -rf '{}' ';' \
+find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$$WEEKS_TO_KEEP*7 -name "*-weekly.tgz" -exec rm -rf '{}' ';' \
+find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$$DAYS_TO_KEEP -name "*-daily.tgz" -exec rm -rf '{}' ';' \
+WEEK_NUMBER=$$(date +%U); \
+DAY_TO_PROC=5; \
+DAY_OF_MONTH=$$(date +%d); \
+DAY_OF_WEEK=$$(date +%u); \
+MONTH_TO_KEEP=1; \
+WEEKS_TO_KEEP=2; \
+DAYS_TO_KEEP=3; \
 DBS=$$@ ; \
 [[ "$$DBS" ]] || DBS=all ; \
 dt=$$(date +%y%m%d) ; \
@@ -55,24 +65,22 @@ if [[ $$DBS == "all" ]] ; then \
   DBS=$$(psql --tuples-only -P format=unaligned -U postgres  \
     -c "SELECT datname FROM pg_database WHERE NOT datistemplate AND datname <> 'postgres'") ; \
 fi ; \
-WEEK_NUMBER=$$(date +%U); \
-DAY_TO_PROC="5"; \
-DAY_OF_MONTH=$$(date +%d); \
-DAY_OF_WEEK=$$(date +%u); \
-MONTH_TO_KEEP="1"; \
-WEEKS_TO_KEEP="2"; \
-DAYS_TO_KEEP="3"; \
-find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$$MONTH_TO_KEEP*30 -name "*-monthly.tgz" -exec rm -rf '{}' ';' \
-find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$$WEEKS_TO_KEEP*7 -name "*-weekly.tgz" -exec rm -rf '{}' ';' \
-find $$DCAPE_DB_DUMP_DEST -maxdepth 1 -mtime +$$DAYS_TO_KEEP -name "*-daily.tgz" -exec rm -rf '{}' ';' \
 for d in $$DBS ; do \
   dest=$$DCAPE_DB_DUMP_DEST/$${d%%.*}-$${dt}-daily.tgz ; \
   echo -n $${dest}... ; \
   [ -f $$dest ] && { echo Skip ; continue ; } ; \
   pg_dump -d $$d -U postgres -Ft | gzip > $$dest || echo "error" ; \
   echo "Daily done" ; \
-  if [ $$(($$WEEK_NUMBER % 2)) == 0 ]; then \
-    if [ $$DAY_OF_WEEK == $$DAY_TO_PROC ]; then \
+  if [ $$DAY_OF_MONTH -eq 1 ]; then \
+    echo "Make monthly backup DBs: $$DBS" ; \
+    dest=$$DCAPE_DB_DUMP_DEST/$${d%%.*}-$${dt}-monthly.tgz ; \
+    echo -n $${dest}... ; \
+    [ -f $$dest ] && { echo Skip ; continue ; } ; \
+    pg_dump -d $$d -U postgres -Ft | gzip > $$dest || echo "error" ; \
+    echo "Monthly done" ; \
+  fi; \
+  if [ $${{$$WEEK_NUMBER % 2}} -eq  0 ]; then \
+    if [ $$DAY_OF_WEEK -eq $$DAY_TO_PROC ]; then \
       echo "Make weekly backup DBs: $$DBS" ; \
       dest=$$DCAPE_DB_DUMP_DEST/$${d%%.*}-$${dt}-weekly.tgz ; \
       echo -n $${dest}... ; \
@@ -80,15 +88,7 @@ for d in $$DBS ; do \
       pg_dump -d $$d -U postgres -Ft | gzip > $$dest || echo "error" ; \
       echo "Weekly done" ; \
     fi; \
- fi; \
-if [ $$DAY_OF_MONTH == 1 ]; then \
-  echo "Make monthly backup DBs: $$DBS" ; \
-  dest=$$DCAPE_DB_DUMP_DEST/$${d%%.*}-$${dt}-monthly.tgz ; \
-  echo -n $${dest}... ; \
-  [ -f $$dest ] && { echo Skip ; continue ; } ; \
-  pg_dump -d $$d -U postgres -Ft | gzip > $$dest || echo "error" ; \
-  echo "Monthly done" ; \
-fi; \
+  fi; \
 done
 endef
 export EXP_SCRIPT
@@ -142,7 +142,6 @@ cron: /etc/cron.d/backup
 backup: docker-wait
 	@echo "*** $@ ***"
 	@[[ "$$BACKUP_ENABLED" == "yes" ]] && echo "$$EXP_SCRIPT" | docker exec -i $$DCAPE_DB bash -s - $$DB_NAME
-
 cleanup:
 	[ -f /etc/cron.d/backup ] && rm /etc/cron.d/backup || true
 
