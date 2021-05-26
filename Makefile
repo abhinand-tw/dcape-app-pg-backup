@@ -142,6 +142,7 @@ cron: /etc/cron.d/backup
 backup: docker-wait
 	@echo "*** $@ ***"
 	@[[ "$$BACKUP_ENABLED" == "yes" ]] && echo "$$EXP_SCRIPT" | docker exec -i $$DCAPE_DB bash -s - $$DB_NAME
+
 cleanup:
 	[ -f /etc/cron.d/backup ] && rm /etc/cron.d/backup || true
 
