@@ -71,7 +71,7 @@ for d in $$DBS ; do \
   [ -f $$dest ] && { echo Skip ; continue ; } ; \
   pg_dump -d $$d -U postgres -Ft | gzip > $$dest || echo "error" ; \
   echo "Daily done" ; \
-  if [ $$DAY_OF_MONTH == 1 ]; then \
+  if [[ $$DAY_OF_MONTH == 01 ]]; then \
     echo "Make monthly backup DBs: $$DBS" ; \
     dest=$$DCAPE_DB_DUMP_DEST/$${d%%.*}-$${dt}-monthly.tgz ; \
     echo -n $${dest}... ; \
