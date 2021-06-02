@@ -79,7 +79,7 @@ for d in $$DBS ; do \
     pg_dump -d $$d -U postgres -Ft | gzip > $$dest || echo "error" ; \
     echo "Monthly done" ; \
   fi; \
-  if [ ${{$$WEEK_NUMBER % 2}} -eq  0 ]; then \
+  if [ ${{$$WEEK_NUMBER % 2}} == 0 ]; then \
     if [ $$DAY_OF_WEEK == $$DAY_TO_PROC ]; then \
       echo "Make weekly backup DBs: $$DBS" ; \
       dest=$$DCAPE_DB_DUMP_DEST/$${d%%.*}-$${dt}-weekly.tgz ; \
